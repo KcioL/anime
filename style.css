@@ -162,3 +162,33 @@ select:hover, select:focus {
         min-width: auto;
     }
 }
+/* =========================================
+   STYLE DU BOUTON CHARGER PLUS
+   ========================================= */
+.load-more-container {
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+
+#load-more-btn {
+    background-color: transparent;
+    color: #f47521;
+    border: 2px solid #f47521;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#load-more-btn:hover {
+    background-color: #f47521;
+    color: #ffffff;
+}
+
+/* Classe utilitaire pour cacher le bouton quand il n'y a plus de pages */
+.hidden {
+    display: none !important;
+}
