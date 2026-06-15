@@ -140,6 +140,25 @@ select:hover, select:focus {
 .error {
     color: #ff4444;
 }
+
+/* Style spécifique pour la note sur l'image */
+.rating-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #f47521;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    z-index: 2;
+}
+
+.anime-card {
+    position: relative; /* Nécessaire pour placer le badge par-dessus */
+}
 @media (max-width: 600px) {
     /* On passe le conteneur principal en colonne */
     .controls {
