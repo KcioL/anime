@@ -1,4 +1,12 @@
-const API_KEY = 'e87e0ac7fc497ae20f3594d217e58d97'; // N'oublie pas ta clé API
+const API_KEY = 'e87e0ac7fc497ae20f3594d217e58d97'; 
+
+// Variables globales pour mémoriser l'état de la recherche
+let currentPage = 1;
+let currentFilters = {
+    dateRange: '',
+    genreId: '',
+    providerId: ''
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     initSeasonSelector();
@@ -6,22 +14,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const seasonSelect = document.getElementById('season-select');
     const platformSelect = document.getElementById('platform-select');
     const genreSelect = document.getElementById('genre-select');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     
-    // Fonction qui lance la recherche avec les TROIS filtres
-    const triggerSearch = () => {
-        fetchAnimes(seasonSelect.value, genreSelect.value, platformSelect.value);
+    // Nouvelle recherche (on remet la page à 1)
+    const triggerNewSearch = () => {
+        currentPage = 1;
+        currentFilters = {
+            dateRange: seasonSelect.value,
+            genreId: genreSelect.value,
+            providerId: platformSelect.value
+        };
+        fetchAnimes(true); // true indique que c'est une NOUVELLE recherche (on efface l'écran)
     };
 
     // Lancement au démarrage
-    triggerSearch();
+    triggerNewSearch();
 
-    // Écoute des changements sur tous les menus
-    seasonSelect.addEventListener('change', triggerSearch);
-    platformSelect.addEventListener('change', triggerSearch);
-    genreSelect.addEventListener('change', triggerSearch);
+    // Écoute des changements sur les filtres
+    seasonSelect.addEventListener('change', triggerNewSearch);
+    platformSelect.addEventListener('change', triggerNewSearch);
+    genreSelect.addEventListener('change', triggerNewSearch);
+
+    // Écoute du clic sur le bouton "Charger plus"
+    loadMoreBtn.addEventListener('click', () => {
+        currentPage++; // On passe à la page suivante
+        fetchAnimes(false); // false indique qu'on AJOUTE à la suite (on n'efface pas l'écran)
+    });
 });
 
-// Génération du menu des saisons (inchangé)
+// Génération du menu des saisons
 function initSeasonSelector() {
     const selector = document.getElementById('season-select');
     const currentYear = 2026; 
@@ -50,52 +71,77 @@ function initSeasonSelector() {
     }
 }
 
-// Nouvelle fonction principale
-async function fetchAnimes(dateRange, genreId, providerId) {
+// Fonction principale mise à jour pour gérer la pagination
+async function fetchAnimes(isNewSearch) {
     const container = document.getElementById('anime-container');
-    container.innerHTML = '<p class="loading">Récupération des animes en cours...</p>';
+    const loadMoreBtn = document.getElementById('load-more-btn');
 
-    const [startDate, endDate] = dateRange.split('|');
+    // Si c'est une nouvelle recherche, on affiche le texte de chargement et on cache le bouton
+    if (isNewSearch) {
+        container.innerHTML = '<p class="loading">Récupération des animes en cours...</p>';
+        loadMoreBtn.classList.add('hidden');
+    } else {
+        // Si c'est la page 2, 3..., on change le texte du bouton pendant le chargement
+        loadMoreBtn.textContent = 'Chargement...';
+        loadMoreBtn.disabled = true;
+    }
 
-    // Base de la requête (Animation japonaise en France pour 
-    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=popularity.desc`;
+    const [startDate, endDate] = currentFilters.dateRange.split('|');
 
+    // Ajout du paramètre &page=${currentPage}
+    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=popularity.desc&page=${currentPage}`;
 
-    // Filtre Genre : ID 16 (Animation) obligatoire + Genre sélectionné
-    let genresQuery = '16';
-    if (genreId !== "") {
-        genresQuery += `,${genreId}`;
+    let genresQuery = '16'; // 16 = Animation
+    if (currentFilters.genreId !== "") {
+        genresQuery += `,${currentFilters.genreId}`;
     }
     url += `&with_genres=${genresQuery}`;
 
-    // Filtre Plateforme : On l'ajoute uniquement si une plateforme spécifique est choisie
-    if (providerId !== "") {
-        url += `&with_watch_providers=${providerId}`;
+    if (currentFilters.providerId !== "") {
+        url += `&with_watch_providers=${currentFilters.providerId}`;
     }
 
     try {
         const response = await fetch(url);
         
         if (!response.ok) {
-            if (response.status === 401) throw new Error("Clé API invalide.");
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
         
         const data = await response.json();
         const animes = data.results;
 
-        displayAnimes(animes, container);
+        // On appelle la fonction d'affichage en précisant s'il faut effacer l'écran ou ajouter à la suite
+        displayAnimes(animes, container, isNewSearch);
+
+        // GESTION DU BOUTON "CHARGER PLUS"
+        // Si la page actuelle est strictement inférieure au nombre total de pages disponibles sur TMDB
+        if (currentPage < data.total_pages) {
+            loadMoreBtn.classList.remove('hidden');
+        } else {
+            loadMoreBtn.classList.add('hidden');
+        }
 
     } catch (error) {
         console.error("Erreur technique :", error);
-        container.innerHTML = `<p class="error">${error.message}</p>`;
+        if (isNewSearch) {
+            container.innerHTML = `<p class="error">${error.message}</p>`;
+        }
+    } finally {
+        // On remet le bouton à son état normal à la fin du chargement
+        loadMoreBtn.textContent = "Charger plus d'animes";
+        loadMoreBtn.disabled = false;
     }
 }
 
-function displayAnimes(animes, container) {
-    container.innerHTML = '';
+// Fonction d'affichage modifiée pour accepter l'ajout (append)
+function displayAnimes(animes, container, isNewSearch) {
+    // On vide le conteneur UNIQUEMENT si c'est une nouvelle recherche
+    if (isNewSearch) {
+        container.innerHTML = '';
+    }
 
-    if (animes.length === 0) {
+    if (animes.length === 0 && isNewSearch) {
         container.innerHTML = '<p>Aucun anime trouvé pour ces critères.</p>';
         return;
     }
@@ -123,6 +169,7 @@ function displayAnimes(animes, container) {
             </div>
         `;
 
+        // Utilisation de appendChild permet d'ajouter les cartes à la suite sans effacer les précédentes
         container.appendChild(card);
     });
 }
