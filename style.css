@@ -140,3 +140,25 @@ select:hover, select:focus {
 .error {
     color: #ff4444;
 }
+@media (max-width: 600px) {
+    /* On passe le conteneur principal en colonne */
+    .controls {
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    /* On place le texte au-dessus du menu déroulant */
+    .filter-group {
+        flex-direction: column;
+        align-items: flex-start; 
+        gap: 5px; 
+        width: 100%;
+    }
+
+    /* Le menu déroulant prend toute la largeur de l'écran */
+    select {
+        width: 100%;
+        min-width: auto;
+    }
+}
