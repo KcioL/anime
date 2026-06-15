@@ -13,7 +13,7 @@
     </header>
 
     <main>
-        <div class="controls">
+       <div class="controls">
             <div class="filter-group">
                 <label for="season-select">Saison :</label>
                 <select id="season-select"></select>
@@ -43,15 +43,16 @@
                     <option value="10762">Enfants</option>
                 </select>
             </div>
-        </div>
 
-        <div id="anime-container" class="grid-container">
-            <p class="loading">Connexion à l'API TMDB en cours...</p>
+            <div class="filter-group">
+                <label for="sort-select">Trier par :</label>
+                <select id="sort-select">
+                    <option value="popularity.desc">Plus populaires</option>
+                    <option value="vote_average.desc">Mieux notés</option>
+                    <option value="popularity.asc">Moins connus (Indés)</option>
+                </select>
+            </div>
         </div>
-        <div id="anime-container" class="grid-container">
-            <p class="loading">Connexion à l'API TMDB en cours...</p>
-        </div>
-
         <div class="load-more-container">
             <button id="load-more-btn" class="hidden">Charger plus d'animes</button>
         </div>
