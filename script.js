@@ -57,8 +57,9 @@ async function fetchAnimes(dateRange, genreId, providerId) {
 
     const [startDate, endDate] = dateRange.split('|');
 
-    // Base de la requête (Animation japonaise en France pour les dates choisies)
-    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&first_air_date.gte=${startDate}&first_air_date.lte=${endDate}&sort_by=popularity.desc`;
+    // Base de la requête (Animation japonaise en France pour 
+let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=popularity.desc`;
+
 
     // Filtre Genre : ID 16 (Animation) obligatoire + Genre sélectionné
     let genresQuery = '16';
