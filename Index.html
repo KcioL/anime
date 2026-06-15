@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier des Animes FR</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Calendrier des Sorties Anime (France)</h1>
+        <p>Propulsé par TMDB</p>
+    </header>
+
+    <main>
+        <div class="controls">
+            <div class="filter-group">
+                <label for="season-select">Saison :</label>
+                <select id="season-select"></select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="platform-select">Plateforme :</label>
+                <select id="platform-select">
+                    <option value="">Toutes les plateformes</option>
+                    <option value="283">Crunchyroll</option>
+                    <option value="414">ADN (Animation Digital Network)</option>
+                    <option value="8">Netflix</option>
+                    <option value="119">Prime Video</option>
+                    <option value="337">Disney+</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="genre-select">Genre :</label>
+                <select id="genre-select">
+                    <option value="">Tous les genres</option>
+                    <option value="10759">Action & Aventure</option>
+                    <option value="35">Comédie</option>
+                    <option value="18">Drame</option>
+                    <option value="10765">Sci-Fi & Fantasy (Isekai)</option>
+                    <option value="9648">Mystère</option>
+                    <option value="10762">Enfants</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="anime-container" class="grid-container">
+            <p class="loading">Connexion à l'API TMDB en cours...</p>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
