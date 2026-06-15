@@ -1,11 +1,13 @@
 const API_KEY = 'e87e0ac7fc497ae20f3594d217e58d97'; 
 
 // Variables globales pour mémoriser l'état de la recherche
+// On ajoute 'sortBy' dans la mémoire des filtres
 let currentPage = 1;
 let currentFilters = {
     dateRange: '',
     genreId: '',
-    providerId: ''
+    providerId: '',
+    sortBy: 'popularity.desc' // Valeur par défaut
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,31 +16,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const seasonSelect = document.getElementById('season-select');
     const platformSelect = document.getElementById('platform-select');
     const genreSelect = document.getElementById('genre-select');
+    const sortSelect = document.getElementById('sort-select'); // Nouveau
     const loadMoreBtn = document.getElementById('load-more-btn');
     
-    // Nouvelle recherche (on remet la page à 1)
     const triggerNewSearch = () => {
         currentPage = 1;
         currentFilters = {
             dateRange: seasonSelect.value,
             genreId: genreSelect.value,
-            providerId: platformSelect.value
+            providerId: platformSelect.value,
+            sortBy: sortSelect.value // Nouveau
         };
-        fetchAnimes(true); // true indique que c'est une NOUVELLE recherche (on efface l'écran)
+        fetchAnimes(true); 
     };
 
-    // Lancement au démarrage
     triggerNewSearch();
 
-    // Écoute des changements sur les filtres
     seasonSelect.addEventListener('change', triggerNewSearch);
     platformSelect.addEventListener('change', triggerNewSearch);
     genreSelect.addEventListener('change', triggerNewSearch);
+    sortSelect.addEventListener('change', triggerNewSearch); // Nouveau
 
-    // Écoute du clic sur le bouton "Charger plus"
     loadMoreBtn.addEventListener('click', () => {
-        currentPage++; // On passe à la page suivante
-        fetchAnimes(false); // false indique qu'on AJOUTE à la suite (on n'efface pas l'écran)
+        currentPage++; 
+        fetchAnimes(false); 
     });
 });
 
@@ -89,8 +90,7 @@ async function fetchAnimes(isNewSearch) {
     const [startDate, endDate] = currentFilters.dateRange.split('|');
 
     // Ajout du paramètre &page=${currentPage}
-    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=popularity.desc&page=${currentPage}`;
-
+    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=${currentFilters.sortBy}&vote_count.gte=10&page=${currentPage}`;
     let genresQuery = '16'; // 16 = Animation
     if (currentFilters.genreId !== "") {
         genresQuery += `,${currentFilters.genreId}`;
