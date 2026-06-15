@@ -182,6 +182,33 @@ select:hover, select:focus {
     }
 }
 /* =========================================
+   NAVIGATION (Menu du haut)
+   ========================================= */
+.top-nav {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-btn {
+    display: inline-block;
+    text-decoration: none;
+    background-color: transparent;
+    color: #f47521;
+    border: 2px solid #f47521;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+    background-color: #f47521;
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(244, 117, 33, 0.4);
+}
+/* =========================================
    STYLE DU BOUTON CHARGER PLUS
    ========================================= */
 .load-more-container {
