@@ -338,8 +338,9 @@ const myAnimes = [
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('mylist-container');
     const sortSelect = document.getElementById('sort-mylist');
+    const searchInput = document.getElementById('search-mylist'); // NOUVEAU
 
-    // On prépare le Lazy Loader (Observateur d'intersection)
+    // L'observateur pour le Lazy Loading
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -354,10 +355,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, { rootMargin: "150px" });
 
-    // Fonction qui affiche une liste donnée à l'écran
+    // Fonction d'affichage
     function afficherListe(listeAnimes) {
-        // On efface l'écran avant de réafficher
         container.innerHTML = '';
+        
+        if (listeAnimes.length === 0) {
+            container.innerHTML = '<p>Aucun anime ne correspond à votre recherche.</p>';
+            return;
+        }
 
         listeAnimes.forEach((anime, index) => {
             const card = document.createElement('div');
@@ -374,36 +379,32 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             
             container.appendChild(card);
-            
-            // On dit à l'observateur de surveiller cette nouvelle carte
             observer.observe(card);
         });
     }
 
-    // Petite fonction utilitaire pour transformer "19.5/20" en nombre (19.5)
+    // Convertisseur de note
     function obtenirNoteNumerique(noteTexte) {
         if (noteTexte === "Non noté" || !noteTexte) return -1;
-        // On coupe le texte au niveau du "/" et on convertit en chiffre
         return parseFloat(noteTexte.split('/')[0]);
     }
 
-    // 1. Affichage par défaut au chargement de la page
-    afficherListe(myAnimes);
+    // NOUVEAU : Fonction centrale qui combine recherche textuelle ET tri
+    function appliquerFiltres() {
+        const termeRecherche = searchInput.value.toLowerCase().trim();
+        const typeTri = sortSelect.value;
 
-    // 2. Écouteur pour le menu de tri
-    sortSelect.addEventListener('change', (event) => {
-        const typeTri = event.target.value;
-        
-        // On crée une copie de la liste originale pour la trier sans la détruire
-        let animesTries = [...myAnimes];
+        // 1. On filtre par texte (si le titre contient ce qu'on a tapé)
+        let resultats = myAnimes.filter(anime => 
+            anime.title.toLowerCase().includes(termeRecherche)
+        );
 
+        // 2. On trie les résultats restants
         if (typeTri === 'desc') {
-            // Du plus grand au plus petit
-            animesTries.sort((a, b) => obtenirNoteNumerique(b.rating) - obtenirNoteNumerique(a.rating));
+            resultats.sort((a, b) => obtenirNoteNumerique(b.rating) - obtenirNoteNumerique(a.rating));
         } 
         else if (typeTri === 'asc') {
-            // Du plus petit au plus grand (en gardant les "Non noté" à la fin)
-            animesTries.sort((a, b) => {
+            resultats.sort((a, b) => {
                 const noteA = obtenirNoteNumerique(a.rating);
                 const noteB = obtenirNoteNumerique(b.rating);
                 if (noteA === -1) return 1;
@@ -412,9 +413,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // On affiche la nouvelle liste triée !
-        afficherListe(animesTries);
-    });
+        // 3. On affiche la liste finale
+        afficherListe(resultats);
+    }
+
+    // Écouteurs d'événements
+    sortSelect.addEventListener('change', appliquerFiltres);
+    
+    // NOUVEAU : 'input' permet de réagir à CHAQUE lettre tapée (temps réel)
+    searchInput.addEventListener('input', appliquerFiltres); 
+
+    // Affichage au lancement de la page
+    appliquerFiltres();
 });
 
 // 4. Fonction de recherche sur TMDB
