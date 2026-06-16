@@ -17,10 +17,20 @@
     </header>
 
     <main>
+        <div class="controls" style="margin-bottom: 30px;">
+            <div class="filter-group">
+                <label for="sort-mylist">Trier par :</label>
+                <select id="sort-mylist">
+                    <option value="default">Ordre d'ajout (Par défaut)</option>
+                    <option value="desc">Meilleures notes d'abord</option>
+                    <option value="asc">Moins bonnes notes d'abord</option>
+                </select>
+            </div>
+        </div>
+
         <div id="mylist-container" class="grid-container">
             </div>
     </main>
-
     <script src="maliste.js"></script>
 </body>
 </html>
