@@ -337,26 +337,9 @@ const myAnimes = [
 
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('mylist-container');
+    const sortSelect = document.getElementById('sort-mylist');
 
-    // 1. Création de toutes les cartes avec une image "En chargement"
-    myAnimes.forEach((anime, index) => {
-        const card = document.createElement('div');
-        card.className = 'anime-card';
-        // On stocke le titre dans un attribut caché pour que l'observateur puisse le lire
-        card.dataset.title = anime.title;
-        card.dataset.index = index;
-
-        card.innerHTML = `
-            <div class="rating-badge">${anime.rating}</div>
-            <img src="https://via.placeholder.com/500x750/1e1e1e/888888?text=Recherche..." alt="Affiche de ${anime.title}" class="poster-img" id="img-${index}">
-            <div class="card-content">
-                <h3 style="font-size: 1rem; margin-top: 5px;">${anime.title}</h3>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-
-    // 2. Le "Lazy Loader" (Observateur d'intersection)
+    // On prépare le Lazy Loader (Observateur d'intersection)
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -365,18 +348,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 const index = card.dataset.index;
                 const imgElement = document.getElementById(`img-${index}`);
 
-                // Lancement de la recherche TMDB pour cette carte spécifique
                 searchAnimePoster(title, imgElement);
-
-                // On arrête d'observer cette carte une fois chargée
                 obs.unobserve(card);
             }
         });
-    }, { rootMargin: "150px" }); // Charge l'image un peu avant qu'elle n'apparaisse à l'écran
+    }, { rootMargin: "150px" });
 
-    // 3. Application de l'observateur à toutes les cartes
-    document.querySelectorAll('.anime-card').forEach(card => {
-        observer.observe(card);
+    // Fonction qui affiche une liste donnée à l'écran
+    function afficherListe(listeAnimes) {
+        // On efface l'écran avant de réafficher
+        container.innerHTML = '';
+
+        listeAnimes.forEach((anime, index) => {
+            const card = document.createElement('div');
+            card.className = 'anime-card';
+            card.dataset.title = anime.title;
+            card.dataset.index = index;
+
+            card.innerHTML = `
+                <div class="rating-badge">${anime.rating}</div>
+                <img src="https://via.placeholder.com/500x750/1e1e1e/888888?text=Recherche..." alt="Affiche de ${anime.title}" class="poster-img" id="img-${index}">
+                <div class="card-content">
+                    <h3 style="font-size: 1rem; margin-top: 5px;">${anime.title}</h3>
+                </div>
+            `;
+            
+            container.appendChild(card);
+            
+            // On dit à l'observateur de surveiller cette nouvelle carte
+            observer.observe(card);
+        });
+    }
+
+    // Petite fonction utilitaire pour transformer "19.5/20" en nombre (19.5)
+    function obtenirNoteNumerique(noteTexte) {
+        if (noteTexte === "Non noté" || !noteTexte) return -1;
+        // On coupe le texte au niveau du "/" et on convertit en chiffre
+        return parseFloat(noteTexte.split('/')[0]);
+    }
+
+    // 1. Affichage par défaut au chargement de la page
+    afficherListe(myAnimes);
+
+    // 2. Écouteur pour le menu de tri
+    sortSelect.addEventListener('change', (event) => {
+        const typeTri = event.target.value;
+        
+        // On crée une copie de la liste originale pour la trier sans la détruire
+        let animesTries = [...myAnimes];
+
+        if (typeTri === 'desc') {
+            // Du plus grand au plus petit
+            animesTries.sort((a, b) => obtenirNoteNumerique(b.rating) - obtenirNoteNumerique(a.rating));
+        } 
+        else if (typeTri === 'asc') {
+            // Du plus petit au plus grand (en gardant les "Non noté" à la fin)
+            animesTries.sort((a, b) => {
+                const noteA = obtenirNoteNumerique(a.rating);
+                const noteB = obtenirNoteNumerique(b.rating);
+                if (noteA === -1) return 1;
+                if (noteB === -1) return -1;
+                return noteA - noteB;
+            });
+        }
+        
+        // On affiche la nouvelle liste triée !
+        afficherListe(animesTries);
     });
 });
 
