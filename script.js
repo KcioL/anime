@@ -1,14 +1,16 @@
 const API_KEY = 'e87e0ac7fc497ae20f3594d217e58d97'; 
 
-// Variables globales pour mémoriser l'état de la recherche
-// On ajoute 'sortBy' dans la mémoire des filtres
 let currentPage = 1;
 let currentFilters = {
     dateRange: '',
     genreId: '',
     providerId: '',
-    sortBy: 'popularity.desc' // Valeur par défaut
+    sortBy: 'popularity.desc',
+    searchQuery: '' // Nouvelle mémoire pour la recherche texte
 };
+
+// Variable pour le délai de sécurité anti-spam (Debounce)
+let searchTimeout = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initSeasonSelector();
@@ -16,34 +18,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const seasonSelect = document.getElementById('season-select');
     const platformSelect = document.getElementById('platform-select');
     const genreSelect = document.getElementById('genre-select');
-    const sortSelect = document.getElementById('sort-select'); // Nouveau
+    const sortSelect = document.getElementById('sort-select');
+    const searchApiInput = document.getElementById('search-api'); // Nouveau
     const loadMoreBtn = document.getElementById('load-more-btn');
     
+    // Fonction qui lance une nouvelle recherche
     const triggerNewSearch = () => {
         currentPage = 1;
         currentFilters = {
             dateRange: seasonSelect.value,
             genreId: genreSelect.value,
             providerId: platformSelect.value,
-            sortBy: sortSelect.value // Nouveau
+            sortBy: sortSelect.value,
+            searchQuery: searchApiInput.value.trim() // On lit la barre de recherche
         };
         fetchAnimes(true); 
     };
 
+    // Lancement par défaut au démarrage
     triggerNewSearch();
 
+    // Écouteurs pour les menus déroulants
     seasonSelect.addEventListener('change', triggerNewSearch);
     platformSelect.addEventListener('change', triggerNewSearch);
     genreSelect.addEventListener('change', triggerNewSearch);
-    sortSelect.addEventListener('change', triggerNewSearch); // Nouveau
+    sortSelect.addEventListener('change', triggerNewSearch);
 
+    // Écouteur SPÉCIAL pour la barre de recherche (avec délai d'attente)
+    searchApiInput.addEventListener('input', () => {
+        // On annule le compte à rebours précédent si l'utilisateur tape encore
+        clearTimeout(searchTimeout);
+        
+        // On lance un nouveau compte à rebours de 500 millisecondes (0.5s)
+        searchTimeout = setTimeout(() => {
+            triggerNewSearch();
+        }, 500);
+    });
+
+    // Bouton Charger plus
     loadMoreBtn.addEventListener('click', () => {
         currentPage++; 
         fetchAnimes(false); 
     });
 });
 
-// Génération du menu des saisons
 function initSeasonSelector() {
     const selector = document.getElementById('season-select');
     const currentYear = 2026; 
@@ -72,50 +90,54 @@ function initSeasonSelector() {
     }
 }
 
-// Fonction principale mise à jour pour gérer la pagination
 async function fetchAnimes(isNewSearch) {
     const container = document.getElementById('anime-container');
     const loadMoreBtn = document.getElementById('load-more-btn');
 
-    // Si c'est une nouvelle recherche, on affiche le texte de chargement et on cache le bouton
     if (isNewSearch) {
-        container.innerHTML = '<p class="loading">Récupération des animes en cours...</p>';
+        container.innerHTML = '<p class="loading">Recherche en cours...</p>';
         loadMoreBtn.classList.add('hidden');
     } else {
-        // Si c'est la page 2, 3..., on change le texte du bouton pendant le chargement
         loadMoreBtn.textContent = 'Chargement...';
         loadMoreBtn.disabled = true;
     }
 
-    const [startDate, endDate] = currentFilters.dateRange.split('|');
+    let url = '';
 
-    // Ajout du paramètre &page=${currentPage}
-    let url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=${currentFilters.sortBy}&vote_count.gte=10&page=${currentPage}`;
-    let genresQuery = '16'; // 16 = Animation
-    if (currentFilters.genreId !== "") {
-        genresQuery += `,${currentFilters.genreId}`;
-    }
-    url += `&with_genres=${genresQuery}`;
+    // ==========================================
+    // LE BASCULEMENT DE MODE SE FAIT ICI
+    // ==========================================
+    if (currentFilters.searchQuery !== '') {
+        // MODE 1 : RECHERCHE TEXTUELLE (Ignore la saison et les plateformes)
+        const queryClean = encodeURIComponent(currentFilters.searchQuery);
+        url = `https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&language=fr-FR&query=${queryClean}&page=${currentPage}`;
+    } 
+    else {
+        // MODE 2 : CALENDRIER CLASSIQUE (Discover)
+        const [startDate, endDate] = currentFilters.dateRange.split('|');
+        url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=fr-FR&watch_region=FR&with_original_language=ja&air_date.gte=${startDate}&air_date.lte=${endDate}&sort_by=${currentFilters.sortBy}&vote_count.gte=10&page=${currentPage}`;
 
-    if (currentFilters.providerId !== "") {
-        url += `&with_watch_providers=${currentFilters.providerId}`;
+        let genresQuery = '16'; 
+        if (currentFilters.genreId !== "") {
+            genresQuery += `,${currentFilters.genreId}`;
+        }
+        url += `&with_genres=${genresQuery}`;
+
+        if (currentFilters.providerId !== "") {
+            url += `&with_watch_providers=${currentFilters.providerId}`;
+        }
     }
 
     try {
         const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
         
         const data = await response.json();
         const animes = data.results;
 
-        // On appelle la fonction d'affichage en précisant s'il faut effacer l'écran ou ajouter à la suite
         displayAnimes(animes, container, isNewSearch);
 
-        // GESTION DU BOUTON "CHARGER PLUS"
-        // Si la page actuelle est strictement inférieure au nombre total de pages disponibles sur TMDB
+        // Affiche ou cache le bouton "Charger plus" selon les pages restantes
         if (currentPage < data.total_pages) {
             loadMoreBtn.classList.remove('hidden');
         } else {
@@ -128,15 +150,12 @@ async function fetchAnimes(isNewSearch) {
             container.innerHTML = `<p class="error">${error.message}</p>`;
         }
     } finally {
-        // On remet le bouton à son état normal à la fin du chargement
         loadMoreBtn.textContent = "Charger plus d'animes";
         loadMoreBtn.disabled = false;
     }
 }
 
-// Fonction d'affichage modifiée pour accepter l'ajout (append)
 function displayAnimes(animes, container, isNewSearch) {
-    // On vide le conteneur UNIQUEMENT si c'est une nouvelle recherche
     if (isNewSearch) {
         container.innerHTML = '';
     }
@@ -153,7 +172,7 @@ function displayAnimes(animes, container, isNewSearch) {
         const title = anime.name;
         const imageUrl = anime.poster_path 
             ? `https://image.tmdb.org/t/p/w500${anime.poster_path}` 
-            : 'https://via.placeholder.com/500x750?text=Pas+d+image';
+            : 'https://via.placeholder.com/500x750/1e1e1e/888888?text=Pas+d+image';
             
         const overview = anime.overview ? anime.overview : "Aucun synopsis disponible en français pour le moment.";
         const tmdbUrl = `https://www.themoviedb.org/tv/${anime.id}?language=fr-FR`;
@@ -169,7 +188,6 @@ function displayAnimes(animes, container, isNewSearch) {
             </div>
         `;
 
-        // Utilisation de appendChild permet d'ajouter les cartes à la suite sans effacer les précédentes
         container.appendChild(card);
     });
 }
